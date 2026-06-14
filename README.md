@@ -1,224 +1,153 @@
-# GPS Spoofing Detection for Electronic Monitoring Bracelets
+# Security Threats on Electronic Bracelets for the Convicts in Jordan
+
+### GPS Spoofing Detection for Electronic Monitoring Bracelets
 
 ![Python](https://img.shields.io/badge/Python-3.10+-blue)
 ![Machine Learning](https://img.shields.io/badge/Machine%20Learning-Scikit--Learn-orange)
 ![Cybersecurity](https://img.shields.io/badge/Cybersecurity-GPS%20Spoofing-red)
 ![Status](https://img.shields.io/badge/Status-Completed-success)
 
-## Overview
-
-Electronic Monitoring (EM) bracelets are widely used by judicial institutions to track offenders through GPS-based location monitoring. However, these systems are vulnerable to GPS spoofing attacks, where forged GPS signals manipulate the reported location of the monitored individual.
-
-This project presents a Machine Learning-based detection framework capable of identifying GPS spoofing attempts by analyzing GPS behavioral patterns, satellite information, movement characteristics, and cross-feature inconsistencies.
-
-The proposed solution improves the integrity, reliability, and security of Electronic Monitoring systems by automatically distinguishing legitimate GPS records from manipulated ones.
+A graduation project (B.Sc. Cyber Security, The Hashemite University) that detects **GPS spoofing
+attacks** on the electronic ankle bracelets used to monitor convicts. The system uses machine
+learning to tell **legitimate** GPS records apart from **spoofed (fake)** ones by analyzing
+movement, satellite, and signal-quality behavior.
 
 ---
 
-## Problem Statement
+## The Problem
 
-Current Electronic Monitoring systems often trust raw GPS data without validating its authenticity.
+Electronic Monitoring (EM) bracelets trust the GPS data they receive without verifying it. An
+attacker can therefore forge that data and make an offender *appear* inside an allowed zone while
+they are actually somewhere else. The main attack vectors are:
 
-This creates several security risks:
+- **GPS signal spoofing** – broadcasting fake satellite signals
+- **Replay attacks** – re-sending old, valid GPS data at a later time
+- **Timestamp / sequence manipulation**
+- **Satellite & sensor data fabrication**
 
-- GPS Signal Spoofing
-- Replay Attacks
-- Timestamp Manipulation
-- Sensor Data Fabrication
-- False Location Reporting
+## Our Approach
 
-As a result, offenders may appear to comply with movement restrictions while actually violating them.
+1. **Build a realistic dataset.** No public dataset for human ankle bracelets exists, so we started
+   from realistic normal human GPS tracks (per-second readings, Jordan coordinates) and used a
+   custom **attack generator** to inject labeled spoofing attacks into them
+   (gradual drag, freeze, replay, fake walking, jump-and-recover).
+2. **Engineer forensic features.** From the raw GPS stream we compute per-session movement and
+   consistency features (see below).
+3. **Train an ensemble model** and validate it honestly with a random split, a time-based split,
+   and a **blind test** on data the model never saw.
+
+> An earlier version of the project used a borrowed Autonomous-Vehicle GPS dataset; the current
+> version (in `data/` and `code/`) uses the realistic human-bracelet dataset.
 
 ---
 
-## Project Objectives
-
-- Analyze cybersecurity threats targeting GPS-based Electronic Monitoring systems.
-- Study the characteristics of GPS spoofing attacks.
-- Identify forensic indicators of manipulated GPS data.
-- Develop a Machine Learning detection model.
-- Improve trust and reliability in offender monitoring systems.
-- Generate automated alerts for suspicious GPS behavior.
-
----
-
-## System Architecture
-
-The detection system follows a complete Machine Learning pipeline:
+## Repository Structure
 
 ```text
-GPS Dataset
-     │
-     ▼
-Data Preprocessing
-     │
-     ▼
-Feature Engineering
-     │
-     ▼
-Model Training
-     │
-     ▼
-Ensemble Classification
-     │
-     ▼
-Spoofing Detection
-     │
-     ▼
-Reporting & Visualization
+.
+├── README.md
+├── report/
+│   └── Project1_Electronic_Bracelet_Attack_detection.pdf   # Full written report
+├── notebook/
+│   └── fix.ipynb                  # Google Colab notebook (end-to-end pipeline)
+├── code/
+│   ├── detection_code.py          # Train + evaluate the detector, save model & plots
+│   ├── predict_unlabeled.py       # Load saved model, predict on unseen data (deployment)
+│   ├── compare.py                 # Score blind predictions vs. true labels
+│   └── generate_spoofing_attack.py# Inject realistic spoofing attacks into normal GPS data
+├── data/
+│   ├── gp_data_normal.csv               # Normal human GPS tracks (attack generator input)
+│   ├── gps_data_spoofed_3.csv           # Labeled training data (normal + spoofed)
+│   ├── gps_data_spoofed_3000.csv        # Labeled data with ground truth
+│   ├── gps_data_spoofed_3000_no_label.csv# Same rows without labels (blind test)
+│   └── gps_data_3000_record.csv
+└── outputs/
+    ├── models/                    # Saved ensemble model + preprocessing (.pkl)
+    ├── plots/                     # Confusion matrices, feature importance, timelines, trajectory
+    ├── human_gps_predictions_*.csv
+    ├── unlabeled_predictions_*.csv
+    └── human_model_report_*.txt   # Run reports
 ```
-
----
-
-## Features
-
-### Data Processing
-
-- Missing Value Handling
-- Feature Scaling
-- Label Normalization
-- GPS Feature Extraction
-
-### GPS Security Analysis
-
-- Satellite Count Analysis
-- Satellite Lock Analysis
-- Velocity Monitoring
-- Heading Consistency Verification
-- GPS Behavior Validation
-
-### Machine Learning Detection
-
-- Binary Classification
-- Ensemble Learning
-- Confidence Scoring
-- Anomaly Detection
-
-### Reporting
-
-- Confusion Matrix
-- Feature Importance Analysis
-- Model Comparison
-- Prediction Distribution
-- Final Detection Reports
-
----
-
-## Technologies Used
-
-### Programming Language
-
-- Python
-
-### Libraries
-
-- Pandas
-- NumPy
-- Matplotlib
-- Seaborn
-- Scikit-Learn
-
----
-
-## Machine Learning Models
-
-| Model | Purpose |
-|---------|----------|
-| Decision Tree | Interpretable classification |
-| Random Forest | Improved accuracy and feature importance |
-| Gradient Boosting | Detection of complex attack patterns |
-| Logistic Regression | Baseline classification |
-| Voting Classifier | Ensemble-based final prediction |
-
-The final system uses a Soft Voting Ensemble Model that combines all classifiers to maximize detection performance and reduce model-specific bias.
-
----
-
-## Dataset
-
-Due to the lack of publicly available datasets related to Electronic Monitoring bracelets, the project utilizes a GPS Spoofing Dataset originally developed for Autonomous Vehicle environments.
-
-The dataset contains:
-
-- Legitimate GPS Records
-- Spoofed GPS Records
-- Satellite Information
-- Velocity Measurements
-- Navigation Parameters
 
 ---
 
 ## Detection Features
 
-The model analyzes several GPS attributes, including:
+Computed per `session_id` from the raw GPS stream:
 
-| Feature | Description |
-|----------|------------|
-| Satellite Count | Number of visible satellites |
-| Satellite Locks | Number of locked satellites |
-| Velocity | Device movement speed |
-| GPS Speed | GPS-calculated speed |
-| Heading Difference | Difference between actual and reported direction |
-| Time Interval | Time between GPS records |
-| Altitude Change | Variation in altitude |
+| Group | Features |
+|-------|----------|
+| Satellite / signal | `sat_count`, `sat_locks`, `sat_ratio`, `sat_discrepancy`, `hdop`, `hdop_diff` |
+| Movement / speed | `distance_m` (haversine), `coord_speed`, `speed_residual`, `velocity`, `velocity_diff`, `acceleration` |
+| Direction | `course_filled`, `course_change`, `course_bearing_diff` |
+| Motion flags | `is_stationary`, `is_fast_human` |
+| Rolling (attack-window) | mean & std over a 5-step window for 8 of the above |
+
+The strongest spoofing indicators were the **HDOP** (signal-quality) features and the rolling
+satellite/course features.
+
+---
+
+## Machine Learning Models
+
+| Model | Role |
+|-------|------|
+| Random Forest | Main classifier + feature importance |
+| Extra Trees | Variance reduction |
+| Neural Network (MLP) | Captures non-linear patterns |
+| **Voting Classifier** | **Soft-voting ensemble of the three (final model)** |
 
 ---
 
 ## Results
 
-### Performance Summary
+| Evaluation | Accuracy |
+|------------|----------|
+| Ensemble – random split | ~99% |
+| Random Forest (alone) | ~99.5% |
+| Blind test (unseen data) | ~99% |
 
-- Detection Accuracy: **98%**
-- High Precision Classification
-- Low False Positive Rate
-- Strong Class Separation
-
-### Key Findings
-
-- Satellite Count was among the strongest spoofing indicators.
-- Satellite Locks significantly influenced model decisions.
-- Ensemble Learning outperformed individual classifiers.
-- GPS spoofing can be effectively detected through behavioral analysis and feature correlation.
+Precision, recall, and F1 are all high (≈98%+), with a low false-positive rate.
 
 ---
 
-## Generated Outputs
+## How to Run
 
-```text
-Project Outputs
-│
-├── confusion_matrix.png
-├── feature_importance.png
-├── anomaly_scores.png
-├── model_comparison.png
-├── prediction_distribution.png
-├── predictions.csv
-└── final_report.txt
+### Option A — Google Colab (recommended)
+
+1. Open `notebook/fix.ipynb` in [Google Colab](https://colab.research.google.com/).
+2. Upload the three CSVs from `data/` to your Google Drive at the path set in the config cell.
+3. Run all cells. The notebook trains the model, evaluates it, runs the blind test, and saves
+   plots/results.
+
+### Option B — Python scripts (run from the repo root)
+
+```bash
+pip install pandas numpy scikit-learn matplotlib seaborn joblib
+
+python code/detection_code.py        # train + evaluate, saves model into outputs/
+python code/predict_unlabeled.py     # predict on the unlabeled data
+python code/compare.py               # score those predictions vs. ground truth
 ```
+
+---
+
+## Technologies
+
+Python · Pandas · NumPy · Scikit-Learn · Matplotlib · Seaborn
 
 ---
 
 ## Future Work
 
-Future enhancements include:
-
-- Real-Time GPS Monitoring
-- IoT Device Integration
-- NS-3 Network Simulation
-- Synthetic Attack Generation
-- Live Alerting System
-- Validation Using Real Electronic Monitoring Data
-- Attack Prevention Mechanisms
+- Real-time GPS monitoring and live alerting
+- NS-3 network simulation of bracelet ↔ monitoring server
+- Validation on real Electronic Monitoring data from judicial authorities
+- Attack **prevention** mechanisms (current scope is detection)
 
 ---
 
-## Research Impact
-
-This project contributes to the growing field of IoT and Cybersecurity by demonstrating how Machine Learning can strengthen the security of GPS-based offender monitoring systems and improve resistance against location-manipulation attacks.
-
----
-
-## Team Members
+## Team
 
 - Laila Ali Harb
 - Saja Abdallah Alqawareeq
@@ -226,20 +155,14 @@ This project contributes to the growing field of IoT and Cybersecurity by demons
 - Maram Husam Zaza
 - Hanan Hazim Alabsa
 
-### Supervisor
+**Supervisor:** Dr. Musab Alghadi
 
-Dr. Musab Alghadi
-
----
-
-## Institution
-
-**The Hashemite University**  
-Faculty of Prince Al-Hussein Bin Abdullah II for Information Technology  
-Department of Cyber Security
+**The Hashemite University** — Faculty of Prince Al-Hussein Bin Abdullah II for Information Technology,
+Department of Cyber Security.
 
 ---
 
 ## License
 
-This project was developed for academic and research purposes as part of the Bachelor of Cyber Security degree requirements at The Hashemite University.
+Developed for academic and research purposes as part of the B.Sc. Cyber Security degree at
+The Hashemite University.
