@@ -38,6 +38,7 @@ they are actually somewhere else. The main attack vectors are:
 
 > An earlier version of the project used a borrowed Autonomous-Vehicle GPS dataset; the current
 > version (in `data/` and `code/`) uses the realistic human-bracelet dataset.
+> See [`CHANGES.md`](CHANGES.md) for a full before/after of the features, models, and structure.
 
 ---
 
@@ -46,6 +47,7 @@ they are actually somewhere else. The main attack vectors are:
 ```text
 .
 ├── README.md
+├── CHANGES.md                       # AV→human migration notes (features, models, structure)
 ├── report/
 │   └── Project1_Electronic_Bracelet_Attack_detection.pdf   # Full written report
 ├── notebook/
